@@ -3,13 +3,12 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-@app.get("/status")
-def get_status():
-    return {"message": "Server is alive"}
+@app.get("/")
+def read_root():
+    return {"message": "Hello, World!"}
 
-class ChatInput(BaseModel):
-    message: str
+@app.get("/login")
+def login():
+    return {"message": "Login endpoint"}
 
-@app.post("/chat")
-def chat(req: ChatInput):
-    return {"response": f"You said: {req.message}"}
+
