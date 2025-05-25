@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 # Security configs
@@ -16,9 +16,20 @@ class User(BaseModel):
     email: EmailStr
     password: str
 
+class CompanyUser(BaseModel):
+    company_name: str
+    username: str
+    email: EmailStr
+    password: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 # Utility Functions
 def get_password_hash(password: str) -> str:
@@ -29,6 +40,6 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
