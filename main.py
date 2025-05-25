@@ -79,6 +79,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+@app.get("/")
+def root():
+    return {"message": "Server is up and running!"}
+
+
+
 
 
 #--------------------------------------Customer Authentication--------------------------------------
