@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Optional
 import uvicorn
+from transformers import pipeline
 
 
 app = FastAPI()
@@ -95,6 +96,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         "code": "SUCCESS",
         "username": current_user.username,
         "email": current_user.email
+        "past_chats" : current_user.chat_history
     }
 
 
@@ -108,8 +110,31 @@ async def start_session():
     # Return the unique session URL
     return {"session_id": session_id, "session_url": f"/chat/{session_id}"}
 
+
+
+# ============================== Sentiment Analysis ==============================
+class SentimentRequest():
+
+    def __init__(self, num_agents: int):
+        self.num_agents = num_agents
+        self.pipes = pipeline(
+                "text-classification",
+                model="tabularisai/multilingual-sentiment-analysis"
+            )
+
+    def analyze_sentiment(self, text: str):
+        results = self.pipes(text)
+        if results[0]['label'] in ['Negative', 'Very Negative']:
+            return "Negative"
+        else:
+            return "Positive"
+
+
+
+
+
 @app.post("/chat/{session_id}")
-async def chat(session_id: str, request: ChatRequest):
+async def chat(session_id: str, request: ChatRequest, sentiment_request: SentimentRequest):
     # Check if session exists
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -118,15 +143,26 @@ async def chat(session_id: str, request: ChatRequest):
     session_data = sessions[session_id]
     user_message = request.message
 
-    # Simulate chatbot response (integrate FastAI model here)
-    # For now, echo the message and store it in history
-    response = f"Bot response to: {user_message}"  # Replace with FastAI model inference
-    session_data["history"].append({"user": user_message, "bot": response})
-    
+    # Sentiment Analysis
+    sentiment = sentiment_request.analyze_sentiment(user_message)
+
+    if sentiment == "Positive":
+        # Simulate chatbot response (integrate FastAI model here)
+        # For now, echo the message and store it in history
+        response = f"Bot response to: {user_message}"  # Replace with FastAI model inference
+        session_data["history"].append({"user": user_message, "bot": response})
+    else:
+        # If sentiment is negative, provide a different response
+        response = "It seems like you're feeling down. How can I assist you better?"
+        # Involve the call agent code here
+
     # Update session data
     sessions[session_id] = session_data
     
     return {"response": response, "history": session_data["history"]}
+
+
+
 
 # Endpoint to end a session
 @app.delete("/end_session/{session_id}")
