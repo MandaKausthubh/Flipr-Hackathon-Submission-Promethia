@@ -6,6 +6,7 @@ from pymongo import MongoClient
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
+from transformers import pipeline
 from pydantic import BaseModel
 import random
 from auth import (
@@ -78,6 +79,24 @@ async def lifespan(app: FastAPI):
     client.close()
 
 #----------------------------------------------------------------------------
+
+class SentimentRequest():
+
+    def __init__(self, num_agents: int):
+        self.num_agents = num_agents
+        self.pipes = pipeline(
+                "text-classification",
+                model="tabularisai/multilingual-sentiment-analysis"
+            )
+
+    def analyze_sentiment(self, text: str):
+        results = self.pipes(text)
+        if results[0]['label'] in ['Negative', 'Very Negative']:
+            return "Negative"
+        else:
+            return "Positive"
+
+
 
 
 app = FastAPI(lifespan=lifespan)
