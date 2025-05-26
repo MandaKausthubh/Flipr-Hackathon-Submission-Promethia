@@ -22,6 +22,12 @@ class CompanyUser(BaseModel):
     email: EmailStr
     password: str
 
+class AgentUser(BaseModel):
+    username: str
+    password: str
+    email: EmailStr
+    company_id: str
+
 
 class Token(BaseModel):
     access_token: str

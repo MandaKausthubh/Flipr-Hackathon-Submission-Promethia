@@ -8,7 +8,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 import random
 from auth import (
-    User, Token, CompanyUser, LoginRequest,
+    User, Token, CompanyUser, AgentUser, LoginRequest,
     get_password_hash, verify_password,
     create_access_token, SECRET_KEY, ALGORITHM
 )
@@ -39,6 +39,7 @@ company_collection = None    # Collection for company details
 # This token is the JWT token, which is generated after login, which is then used to access protected routes for the customer/user
 oauth2_scheme_customer = OAuth2PasswordBearer(tokenUrl="customer_login")
 oauth2_scheme_company = OAuth2PasswordBearer(tokenUrl="company_login")
+oauth2_scheme_agent = OAuth2PasswordBearer(tokenUrl="agent_login")
 
 
 
@@ -50,14 +51,14 @@ async def lifespan(app: FastAPI):
 
     dbpass = 'sN5lE6aT8jyLQmpy' # later replace with environment variable  
 
-    #client = MongoClient("mongodb://localhost:27017") # Local MongoDB URI
-    print("[INIT] Connecting to MongoDB...")
-    try:
-        client = MongoClient(f"mongodb+srv://jineshpagariaA:{dbpass}@flipr-sub.wn6wezr.mongodb.net/?retryWrites=true&w=majority&appName=flipr-sub")  # MongoDB Atlas URI
-        print("[INIT] MongoDB connected successfully")
-    except Exception as e:
-        print(f"[ERROR] Failed to connect to MongoDB: {e}")
-        raise HTTPException(status_code=500, detail="Database connection failed")
+    client = MongoClient("mongodb://localhost:27017") # Local MongoDB URI
+    # print("[INIT] Connecting to MongoDB...")
+    # try:
+    #     client = MongoClient(f"mongodb+srv://jineshpagariaA:{dbpass}@flipr-sub.wn6wezr.mongodb.net/?retryWrites=true&w=majority&appName=flipr-sub")  # MongoDB Atlas URI
+    #     print("[INIT] MongoDB connected successfully")
+    # except Exception as e:
+    #     print(f"[ERROR] Failed to connect to MongoDB: {e}")
+    #     raise HTTPException(status_code=500, detail="Database connection failed")
 
     db = client["promethia_ai"] # Database name
     collection = ["customer_details", "company_details", "agent_details", "ticket_logs"]  # list of Collections
@@ -213,7 +214,75 @@ def read_company_profile(current_company: dict = Depends(get_current_company)):
         "email": current_company["email"],
         "date_of_registration": current_company["date_of_registration"]
     }
+#-------------------------------------Company Authentication Ends--------------------------------------
 
+#--------------------------------------Agent Authentication--------------------------------------
+
+@app.post("/register_agent")
+def register_agent(agent: AgentUser, current_company: dict = Depends(get_current_company)):
+    if collection[2].find_one({"username": agent.username}):
+        raise HTTPException(status_code=400, detail="Agent username already registered")
+
+    if len(agent.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+
+    if agent.company_id != current_company["company_id"]:
+        raise HTTPException(status_code=403, detail="You are not authorized to register agents for other companies")
+
+    hashed_password = get_password_hash(agent.password)
+    aid = "AID" + str(uuid4())
+
+    agent_doc = {
+        "agent_id": aid,
+        "company_id": agent.company_id,
+        "username": agent.username,
+        "email": agent.email,
+        "password": hashed_password,
+        "tickets_resolved": 0,
+        "date_of_joining": datetime.now(timezone.utc)
+    }
+
+    collection[2].insert_one(agent_doc)
+    print(f"AGENT REGISTERED SUCCESSFULLY under company {agent.company_id}")
+    return {"message": "Agent registered successfully", "agentId": aid, "code": "SUCCESS"}
+
+@app.post("/agent_login", response_model=Token)
+def verify_agent_login(data: LoginRequest):
+    agent = collection[2].find_one({"username": data.username})
+    
+    if not agent or not verify_password(data.password, agent["password"]):
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+
+    token = create_access_token(data={"sub": agent["username"], "token_type": "agent"})
+    print(f"AGENT LOGIN SUCCESSFUL, created JWT token for {agent['username']}, agent_id: {agent['agent_id']}")
+    
+    return {"access_token": token, "token_type": "agent"}
+
+
+def get_current_agent(token: str = Depends(oauth2_scheme_agent)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    agent = collection[2].find_one({"username": username})
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    return agent
+
+@app.get("/agent_profile")
+def read_agent_profile(current_agent: dict = Depends(get_current_agent)):
+    return {
+        "agent_id": current_agent["agent_id"],
+        "company_id": current_agent["company_id"],
+        "username": current_agent["username"],
+        "tickets_resolved": current_agent["tickets_resolved"]
+    }
+#--------------------------------------Agent Authentication Ends--------------------------------------
 
 
 
