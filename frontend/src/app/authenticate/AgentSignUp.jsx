@@ -1,0 +1,234 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Headphones, Eye, EyeOff } from "lucide-react"
+
+export default function AgentSignUp() {
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    companyId: "",
+    employeeId: "",
+    department: "",
+    password: "",
+    confirmPassword: "",
+  })
+
+  // Mock companies data - in real app, this would come from API
+  const companies = [
+    { id: "1", name: "Acme Corporation" },
+    { id: "2", name: "TechStart Inc." },
+    { id: "3", name: "Global Solutions Ltd." },
+    { id: "4", name: "Innovation Hub" },
+  ]
+
+  const departments = ["Customer Support", "Technical Support", "Sales Support", "Billing Support", "General Support"]
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match")
+      return
+    }
+    console.log("Agent sign up:", formData)
+    // Handle agent sign up logic here
+  }
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    })
+  }
+
+  const handleCompanyChange = (value) => {
+    setFormData({
+      ...formData,
+      companyId: value,
+    })
+  }
+
+  const handleDepartmentChange = (value) => {
+    setFormData({
+      ...formData,
+      department: value,
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mb-4">
+            <Headphones className="w-6 h-6 text-white" />
+          </div>
+          <CardTitle className="text-2xl font-bold">Register as Agent</CardTitle>
+          <CardDescription>Join a company as a customer support agent</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="companyId">Select Company *</Label>
+              <Select value={formData.companyId} onValueChange={handleCompanyChange} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose the company you work for" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name *</Label>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  placeholder="John"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name *</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Doe"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Work Email *</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="john.doe@company.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  value={formData.phone}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="employeeId">Employee ID</Label>
+                <Input
+                  id="employeeId"
+                  name="employeeId"
+                  placeholder="EMP001"
+                  value={formData.employeeId}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select value={formData.department} onValueChange={handleDepartmentChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a strong password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
+              Register as Agent
+            </Button>
+          </form>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an agent account?{" "}
+              <a href="/auth/agent/signin" className="text-green-600 hover:underline">
+                Sign in here
+              </a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
