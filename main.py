@@ -51,14 +51,14 @@ async def lifespan(app: FastAPI):
 
     dbpass = 'sN5lE6aT8jyLQmpy' # later replace with environment variable  
 
-    client = MongoClient("mongodb://localhost:27017") # Local MongoDB URI
-    # print("[INIT] Connecting to MongoDB...")
-    # try:
-    #     client = MongoClient(f"mongodb+srv://jineshpagariaA:{dbpass}@flipr-sub.wn6wezr.mongodb.net/?retryWrites=true&w=majority&appName=flipr-sub")  # MongoDB Atlas URI
-    #     print("[INIT] MongoDB connected successfully")
-    # except Exception as e:
-    #     print(f"[ERROR] Failed to connect to MongoDB: {e}")
-    #     raise HTTPException(status_code=500, detail="Database connection failed")
+    #client = MongoClient("mongodb://localhost:27017") # Local MongoDB URI
+    print("[INIT] Connecting to MongoDB...")
+    try:
+        client = MongoClient(f"mongodb+srv://jineshpagariaA:{dbpass}@flipr-sub.wn6wezr.mongodb.net/?retryWrites=true&w=majority&appName=flipr-sub")  # MongoDB Atlas URI
+        print("[INIT] MongoDB connected successfully")
+    except Exception as e:
+        print(f"[ERROR] Failed to connect to MongoDB: {e}")
+        raise HTTPException(status_code=500, detail="Database connection failed")
 
     db = client["promethia_ai"] # Database name
     collection = ["customer_details", "company_details", "agent_details", "ticket_logs"]  # list of Collections
