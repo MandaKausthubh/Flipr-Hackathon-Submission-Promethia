@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -80,6 +81,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],         # Allow requests from any origin
+    allow_credentials=True,
+    allow_methods=["*"],         # HTTP methods: GET, POST, etc.
+    allow_headers=["*"],         # headers
+)
+
 @app.get("/")
 def root():
     return {"message": "Server is up and running!"}
