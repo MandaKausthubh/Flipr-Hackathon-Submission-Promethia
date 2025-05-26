@@ -26,7 +26,7 @@ class ChatRequest(BaseModel):
     message: str
 sessions = {} # In-memory session store
 
-
+SAModel = None
 #----MongoDB global handles--+
 client = None                #
 db = None                    #  
@@ -43,13 +43,27 @@ oauth2_scheme_customer = OAuth2PasswordBearer(tokenUrl="customer_login")
 oauth2_scheme_company = OAuth2PasswordBearer(tokenUrl="company_login")
 oauth2_scheme_agent = OAuth2PasswordBearer(tokenUrl="agent_login")
 
+class SentimentRequest():
+    def __init__(self, num_agents: int):
+        self.num_agents = num_agents
+        self.pipes = pipeline(
+                "text-classification",
+                model="tabularisai/multilingual-sentiment-analysis"
+            )
+
+    def analyze_sentiment(self, text: str):
+        results = self.pipes(text)
+        if results[0]['label'] in ['Negative', 'Very Negative']:
+            return "Negative"
+        else:
+            return "Positive"
 
 
 
 # Lifespan to initialize DB, runs only once for the first time -------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global client, db, collection, ticket_collection, customer_collection, agent_collection,company_collection
+    global client, db, collection, ticket_collection, customer_collection, agent_collection,company_collection,SAModel
 
     dbpass = 'sN5lE6aT8jyLQmpy' # later replace with environment variable  
 
@@ -75,26 +89,11 @@ async def lifespan(app: FastAPI):
     company_collection = collection[1]    # Company details collection
     agent_collection = collection[2]      # Agent details collection
     ticket_collection = collection[3]     # Ticket logs collection
+    SAModel = SentimentRequest()
     yield
     client.close()
 
 #----------------------------------------------------------------------------
-
-class SentimentRequest():
-
-    def __init__(self, num_agents: int):
-        self.num_agents = num_agents
-        self.pipes = pipeline(
-                "text-classification",
-                model="tabularisai/multilingual-sentiment-analysis"
-            )
-
-    def analyze_sentiment(self, text: str):
-        results = self.pipes(text)
-        if results[0]['label'] in ['Negative', 'Very Negative']:
-            return "Negative"
-        else:
-            return "Positive"
 
 
 
@@ -429,11 +428,19 @@ async def chat(session_id: str, request: ChatRequest):
     session_data = sessions[session_id]
     user_message = request.message
 
-    # Simulate chatbot response (integrate FastAI model here)
-    # For now, echo the message and store it in history
-    response = f"Bot response to: {user_message}"  # Replace with FastAI model inference
-    session_data["history"].append({"user": user_message, "bot": response})
-    
+    score = SAModel.analyze_sentiment(user_message)
+
+    if sentiment == "Positive":
+        # Simulate chatbot response (integrate FastAI model here)
+        # For now, echo the message and store it in history
+        response = f"Bot response to: {user_message}"  # Replace with FastAI model inference
+        response = 
+        session_data["history"].append({"user": user_message, "bot": response})
+    else:
+        # If sentiment is negative, provide a different response
+        response = "It seems like you're feeling down. How can I assist you better?"
+        # Involve the call agent code here
+
     # Update session data
     sessions[session_id] = session_data
     
